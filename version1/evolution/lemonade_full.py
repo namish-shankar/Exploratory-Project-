@@ -14,6 +14,7 @@ def run_lemonade(
     generations=5,
     n_children=6,
     n_accept=3,
+    epochs=1,
     train_loader=None,
     val_loader=None,
     device="cpu"
@@ -37,7 +38,7 @@ def run_lemonade(
                 train_loader,
                 val_loader,
                 device=device,
-                epochs=1
+                epochs=epochs
             )
 
     population = pareto_front(population)
@@ -74,7 +75,7 @@ def run_lemonade(
                     train_loader,
                     val_loader,
                     device=device,
-                    epochs=1
+                    epochs=epochs
                 )
 
             children.append(child)
@@ -88,7 +89,18 @@ def run_lemonade(
         accepted = sampler.sample(children, min(n_accept, len(children)))
 
         # Merge + keep Pareto front
+        # population = pareto_front(population + accepted)
+        # previous code above, we changed it here ----- from here to 
         population = pareto_front(population + accepted)
+
+        # remove duplicates by (params, flops)
+        unique = {}
+        for ind in population:
+            key = (ind.f_cheap["params"], ind.f_cheap["flops"])
+            unique[key] = ind
+
+        population = list(unique.values())
+        # ---------  till here
 
         logger.info("Population size after selection: %d", len(population))
 

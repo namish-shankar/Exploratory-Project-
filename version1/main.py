@@ -56,10 +56,11 @@ def main():
     # Run LEMONADE
     # -------------------------------------------------
     final_population = run_lemonade(
-        init_graphs=[seed_graph()],
-        generations=5,
-        n_children=6,
-        n_accept=3,
+        init_graphs=[seed_graph() for _ in range(4)],
+        generations=10,
+        n_children=8,
+        n_accept=4,
+        epochs=2,
         train_loader=train_loader,
         val_loader=val_loader,
         device=device
