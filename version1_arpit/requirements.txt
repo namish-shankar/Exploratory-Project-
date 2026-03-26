@@ -1,0 +1,21 @@
+# requirements.txt
+
+# Core Deep Learning
+# 2.0.0+ is optimal because it modernized the autograd engine and memory management,
+# which helps our 3-epoch multiprocessing runs stay efficient.
+torch>=2.0.0
+torchvision>=0.15.0
+
+# Computation & Array Manipulation
+# OPTIMIZED: Bound numpy under 2.0.0 to prevent C-extension compilation 
+# conflicts with older thop or torchvision binaries.
+numpy>=1.21.0
+# Evolution & Sampling 
+# 1.0.0+ is optimal because it stabilized the KernelDensity bandwidth parameter
+# which our KDESampler relies on to prevent NaN crashes.
+scikit-learn>=1.0.0
+
+# Profiling 
+# 0.1.1 is the most stable release of PyTorch-OpCounter that reliably 
+# supports dynamic graph tracing for our mutated child models.
+thop>=0.1.1

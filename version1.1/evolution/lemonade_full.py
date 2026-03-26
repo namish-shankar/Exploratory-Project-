@@ -13,7 +13,6 @@ import pickle
 import time
 import traceback
 from concurrent.futures import ProcessPoolExecutor, as_completed
-
 from evolution.individual import Individual
 from evolution.pareto import pareto_front
 from evolution.sampling import KDESampler

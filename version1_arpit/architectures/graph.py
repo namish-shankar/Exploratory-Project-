@@ -2,7 +2,6 @@
 import copy
 from collections import defaultdict, deque
 
-
 class ArchitectureGraph:
     def __init__(self):
         self.nodes = {}          # node_id -> Node
@@ -19,24 +18,31 @@ class ArchitectureGraph:
     def get_parents(self, node_id):
         return self.nodes[node_id].parents
 
+    def get_children(self, node_id):
+        """
+        Crucial for net2wider and transitive channel updates.
+        Returns a list of node_ids that have the given node_id as a parent.
+        """
+        children = []
+        for nid, node in self.nodes.items():
+            if node_id in node.parents:
+                children.append(nid)
+        return children
+
     def topological_sort(self):
-        """
-        Kahn's algorithm for topological sorting.
-        Raises AssertionError if a cycle exists.
-        """
-        indegree = defaultdict(int)
+        indegree = {nid: 0 for nid in self.nodes}
         children = defaultdict(list)
 
-        # Build graph
+        # Build graph explicitly ensuring all nodes are tracked
         for node_id, node in self.nodes.items():
             for p in node.parents:
-                children[p].append(node_id)
-                indegree[node_id] += 1
+                if p in self.nodes:  # Guard against implicit input nodes not in dict
+                    children[p].append(node_id)
+                    indegree[node_id] += 1
 
-        # Nodes with no incoming edges
         queue = deque([nid for nid in self.nodes if indegree[nid] == 0])
-
         order = []
+        
         while queue:
             u = queue.popleft()
             order.append(u)
@@ -45,30 +51,28 @@ class ArchitectureGraph:
                 if indegree[v] == 0:
                     queue.append(v)
 
-        assert len(order) == len(self.nodes), "Graph has a cycle!"
+        # If order length != nodes length, a cycle exists (e.g., bad skip connection)
+        if len(order) != len(self.nodes):
+            raise AssertionError("Graph has a cycle! Check morphism operations.")
         return order
 
     def assert_acyclic(self):
-        """
-        Explicit validation hook for morphisms / compiler.
-        """
         try:
             self.topological_sort()
-        except AssertionError:
-            raise RuntimeError("Invalid architecture: cycle detected")
+        except AssertionError as e:
+            raise RuntimeError(f"Invalid architecture: {str(e)}")
 
     def clone(self):
         """
-        Return a deep copy of the ArchitectureGraph.
+        Deepcopy is expensive but necessary for branching evolutionary paths.
+        Ensure node params aren't holding heavy tensors when cloned.
         """
         return copy.deepcopy(self)
 
     def __repr__(self):
         lines = ["ArchitectureGraph:"]
-        for nid in sorted(self.nodes):
+        for nid in self.topological_sort():
             n = self.nodes[nid]
-            lines.append(
-                f"  Node {nid}: op={n.op_type}, parents={n.parents}"
-            )
+            lines.append(f"  Node {nid}: op={n.op_type}, parents={n.parents}")
         lines.append(f"  Output node: {self.output_node}")
         return "\n".join(lines)
